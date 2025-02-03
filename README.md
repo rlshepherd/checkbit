@@ -23,14 +23,16 @@ chess_bitboard = { git = "https://github.com/yourusername/chess_bitboard" }
 ### Basic Board Operations
 
 ```rust
-use chess_bitboard::{Board, Color, PieceType};
+use chess_bitboard::Board;
 
 // Create a new board with pieces in starting positions
 let board = Board::initial();
 
-// Or create an empty board and place pieces manually
+// Or create an empty board and place pieces manually.
+// Use the square index and a character to represent the piece.
+// Example: 'N' for a white Knight.
 let mut board = Board::empty();
-board.place_piece(PieceType::Knight, Color::White, 27); // Place white knight on d4
+board.place_piece(27, 'N'); // Place white knight on d4
 ```
 
 ### Move Generation
@@ -40,11 +42,15 @@ board.place_piece(PieceType::Knight, Color::White, 27); // Place white knight on
 let moves = board.get_moves(27); // Get moves for piece on d4
 let move_count = moves.pop_count(); // Count number of legal moves
 
-// Example: Calculate all possible moves for white
+// Example: Calculate all possible moves for white pieces
+// (Assuming that white pieces are represented by uppercase characters)
 let all_white_moves = (0..64)
     .filter(|&square| {
-        matches!(board.get_piece_at(square), 
-                Some((_, Color::White)))
+        if let Some(piece) = board.get_piece_at(square) {
+            piece.is_ascii_uppercase()
+        } else {
+            false
+        }
     })
     .fold(Bitboard::empty(), |acc, square| {
         acc | board.get_moves(square)
@@ -54,25 +60,22 @@ let all_white_moves = (0..64)
 ### Complex Position Analysis
 
 ```rust
-// Example: Setting up a specific position
+// Example: Setting up a specific position on an empty board
 let mut board = Board::empty();
 
-// Place pieces
-board.place_piece(PieceType::Bishop, Color::White, 27); // d4
-board.place_piece(PieceType::Pawn, Color::White, 36);   // e5 - blocking own pawn
-board.place_piece(PieceType::Pawn, Color::Black, 18);   // c3 - enemy pawn can be captured
+// Place pieces using square indices and character representations.
+// Use uppercase letters for white pieces and lowercase for black pieces.
+board.place_piece(27, 'B'); // Place white bishop on d4
+board.place_piece(36, 'P'); // Place white pawn on e5 (blocking)
+board.place_piece(18, 'p'); // Place black pawn on c3 (can be captured)
 
 // Get legal moves for the bishop
 let bishop_moves = board.get_moves(27);
-// bishop_moves will contain: c3 (capture), c5, b6, a7, e3, f2, g1
+// Expected moves for bishop on d4 might include diagonal moves such as capturing on c3
 
-// Get all pieces of a specific color
-let white_pieces = board.get_color_pieces(Color::White);
-let black_pieces = board.get_color_pieces(Color::Black);
-
-// Check if a square is occupied
-if let Some((piece_type, color)) = board.get_piece_at(27) {
-    println!("Square d4 contains a {:?} {:?}", color, piece_type);
+// Retrieve piece information from a square
+if let Some(piece) = board.get_piece_at(27) {
+    println!("Square d4 contains: {}", piece);
 }
 ```
 
@@ -120,12 +123,12 @@ The library uses a 64-bit integer to represent the chess board, where each bit c
 
 The library implements efficient move generation for all piece types:
 
-- **Pawns**: Handles single moves, double moves from starting position, and captures
-- **Knights**: Uses pre-calculated move patterns
-- **Bishops**: Uses ray-tracing along diagonals
-- **Rooks**: Uses ray-tracing along ranks and files
-- **Queens**: Combines bishop and rook movements
-- **Kings**: Uses pre-calculated move patterns
+- **Pawns**: Handles single moves, double moves from starting position, and captures.
+- **Knights**: Uses pre-calculated move patterns.
+- **Bishops**: Uses ray-tracing along diagonals.
+- **Rooks**: Uses ray-tracing along ranks and files.
+- **Queens**: Combines bishop and rook movements.
+- **Kings**: Uses pre-calculated move patterns.
 
 ## Testing
 
