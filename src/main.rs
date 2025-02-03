@@ -1,3 +1,1 @@
-fn main() {
-    println!("Hello, world!");
-}
+// This file is intentionally empty as we are a library crate
