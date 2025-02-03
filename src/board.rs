@@ -16,6 +16,15 @@ impl Color {
     }
 }
 
+impl std::fmt::Display for Color {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Color::White => write!(f, "White"),
+            Color::Black => write!(f, "Black"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PieceType {
     Pawn,
@@ -24,6 +33,19 @@ pub enum PieceType {
     Rook,
     Queen,
     King,
+}
+
+impl std::fmt::Display for PieceType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PieceType::Pawn => write!(f, "Pawn"),
+            PieceType::Knight => write!(f, "Knight"),
+            PieceType::Bishop => write!(f, "Bishop"),
+            PieceType::Rook => write!(f, "Rook"),
+            PieceType::Queen => write!(f, "Queen"),
+            PieceType::King => write!(f, "King"),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -414,6 +436,42 @@ impl Board {
 
             current_square = new_square;
         }
+    }
+}
+
+impl std::fmt::Display for Board {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Format the board in an 8x8 grid with rank 8 at the top.
+        for rank in (0..8).rev() {
+            let mut line = String::new();
+            for file in 0..8 {
+                let square = rank * 8 + file;
+                let symbol = if let Some((piece, color)) = self.get_piece_at(square) {
+                    match (piece, color) {
+                        (PieceType::Pawn, Color::White) => "P",
+                        (PieceType::Knight, Color::White) => "N",
+                        (PieceType::Bishop, Color::White) => "B",
+                        (PieceType::Rook, Color::White) => "R",
+                        (PieceType::Queen, Color::White) => "Q",
+                        (PieceType::King, Color::White) => "K",
+                        (PieceType::Pawn, Color::Black) => "p",
+                        (PieceType::Knight, Color::Black) => "n",
+                        (PieceType::Bishop, Color::Black) => "b",
+                        (PieceType::Rook, Color::Black) => "r",
+                        (PieceType::Queen, Color::Black) => "q",
+                        (PieceType::King, Color::Black) => "k",
+                    }
+                } else {
+                    "."
+                };
+                line.push_str(symbol);
+                if file < 7 {
+                    line.push(' ');
+                }
+            }
+            writeln!(f, "{}", line)?;
+        }
+        Ok(())
     }
 }
 
