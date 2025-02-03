@@ -15,7 +15,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-chess_bitboard = { git = "https://github.com/yourusername/chess_bitboard" }
+chess_bitboard = { git = "https://github.com/rlshepherd/checkbit" }
 ```
 
 ## Usage
@@ -23,16 +23,14 @@ chess_bitboard = { git = "https://github.com/yourusername/chess_bitboard" }
 ### Basic Board Operations
 
 ```rust
-use chess_bitboard::Board;
+use checkbit::{Board, PieceType, Color};
 
 // Create a new board with pieces in starting positions
 let board = Board::initial();
 
 // Or create an empty board and place pieces manually.
-// Use the square index and a character to represent the piece.
-// Example: 'N' for a white Knight.
 let mut board = Board::empty();
-board.place_piece(27, 'N'); // Place white knight on d4
+board.place_piece(PieceType::Knight, Color::White, 27); // Place white knight on d4
 ```
 
 ### Move Generation
@@ -43,11 +41,10 @@ let moves = board.get_moves(27); // Get moves for piece on d4
 let move_count = moves.pop_count(); // Count number of legal moves
 
 // Example: Calculate all possible moves for white pieces
-// (Assuming that white pieces are represented by uppercase characters)
 let all_white_moves = (0..64)
     .filter(|&square| {
         if let Some(piece) = board.get_piece_at(square) {
-            piece.is_ascii_uppercase()
+            piece.1 == Color::White
         } else {
             false
         }
@@ -65,9 +62,9 @@ let mut board = Board::empty();
 
 // Place pieces using square indices and character representations.
 // Use uppercase letters for white pieces and lowercase for black pieces.
-board.place_piece(27, 'B'); // Place white bishop on d4
-board.place_piece(36, 'P'); // Place white pawn on e5 (blocking)
-board.place_piece(18, 'p'); // Place black pawn on c3 (can be captured)
+board.place_piece(PieceType::Bishop, Color::White, 27); // Place white bishop on d4
+board.place_piece(PieceType::Pawn, Color::White, 36); // Place white pawn on e5 (blocking)
+board.place_piece(PieceType::Pawn, Color::Black, 18); // Place black pawn on c3 (can be captured)
 
 // Get legal moves for the bishop
 let bishop_moves = board.get_moves(27);
