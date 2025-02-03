@@ -5,3 +5,5 @@ pub mod constants;
 // Re-export main types
 pub use bitboard::Bitboard;
 pub use board::Board;
+pub use board::Color;
+pub use board::PieceType;
