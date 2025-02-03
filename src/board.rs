@@ -518,7 +518,7 @@ mod tests {
         assert_eq!(moves.pop_count(), 13); // Bishop should have 13 moves from d4
 
         // Test blocking
-        board.place_piece(PieceType::Pawn, Color::White, 36); // e5
+        board.place_piece(PieceType::Pawn, Color::White, 45); // f6
         let moves = board.get_moves(27);
         assert_eq!(moves.pop_count(), 10); // Should have 3 fewer moves due to blocking
     }
