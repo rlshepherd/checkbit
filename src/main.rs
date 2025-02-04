@@ -1,1 +1,4 @@
-// This file is intentionally empty as we are a library crate
+fn main() {
+    println!("Checkbit - A chess bitboard implementation");
+    println!("This is a library crate. Please use the provided modules and types in your code.");
+}
