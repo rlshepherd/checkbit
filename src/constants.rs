@@ -96,7 +96,7 @@ const fn generate_ray_moves(delta: i8) -> [u64; 64] {
     while square < 64 {
         let mut bb = 0u64;
         let mut current = square;
-        let start_file = current % 8;
+        let _start_file = current % 8;
 
         loop {
             let new_square = (current as i8 + delta) as u8;

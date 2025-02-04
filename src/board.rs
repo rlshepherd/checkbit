@@ -181,8 +181,42 @@ impl Board {
         Some((piece_type, color))
     }
 
-    /// Places a piece on the board and updates en passant square if it's a pawn moving two squares
+    /// Places a piece on the board, handling captures and en passant
     pub fn place_piece(&mut self, piece_type: PieceType, color: Color, square: u8) {
+        // Clear any existing piece at the target square (handle captures)
+        match color {
+            Color::White => {
+                self.black_pawns.clear_bit(square);
+                self.black_knights.clear_bit(square);
+                self.black_bishops.clear_bit(square);
+                self.black_rooks.clear_bit(square);
+                self.black_queens.clear_bit(square);
+                self.black_king.clear_bit(square);
+            }
+            Color::Black => {
+                self.white_pawns.clear_bit(square);
+                self.white_knights.clear_bit(square);
+                self.white_bishops.clear_bit(square);
+                self.white_rooks.clear_bit(square);
+                self.white_queens.clear_bit(square);
+                self.white_king.clear_bit(square);
+            }
+        }
+
+        // Handle en passant capture
+        if piece_type == PieceType::Pawn {
+            if let Some(ep_square) = self.en_passant_square {
+                if square == ep_square {
+                    // Remove the captured pawn
+                    match color {
+                        Color::White => self.black_pawns.clear_bit(square - 8),
+                        Color::Black => self.white_pawns.clear_bit(square + 8),
+                    }
+                }
+            }
+        }
+
+        // Clear the piece from all squares of its type (for the moving color)
         let bitboard = match (color, piece_type) {
             (Color::White, PieceType::Pawn) => &mut self.white_pawns,
             (Color::White, PieceType::Knight) => &mut self.white_knights,
@@ -213,6 +247,8 @@ impl Board {
             self.en_passant_square = None;
         }
 
+        // Clear all bits for this piece type and set the new position
+        *bitboard = Bitboard::empty();
         bitboard.set_bit(square);
     }
 
@@ -271,10 +307,10 @@ impl Board {
                     if let Some(ep_square) = self.en_passant_square {
                         if square >= 32 && square < 40 {
                             // White pawns on rank 5
-                            if square % 8 != 0 && ep_square == square + 7 {
+                            if square % 8 != 0 && ep_square == square - 1 {
                                 moves.set_bit(ep_square);
                             }
-                            if square % 8 != 7 && ep_square == square + 9 {
+                            if square % 8 != 7 && ep_square == square + 1 {
                                 moves.set_bit(ep_square);
                             }
                         }
@@ -303,10 +339,10 @@ impl Board {
                     if let Some(ep_square) = self.en_passant_square {
                         if square >= 24 && square < 32 {
                             // Black pawns on rank 4
-                            if square % 8 != 0 && ep_square == square - 9 {
+                            if square % 8 != 0 && ep_square == square - 1 {
                                 moves.set_bit(ep_square);
                             }
-                            if square % 8 != 7 && ep_square == square - 7 {
+                            if square % 8 != 7 && ep_square == square + 1 {
                                 moves.set_bit(ep_square);
                             }
                         }
@@ -364,33 +400,19 @@ impl Board {
         all_pieces: Bitboard,
         enemy_pieces: Bitboard,
     ) -> Bitboard {
-        let blockers = ray & all_pieces;
-        if blockers.as_u64() == 0 {
-            // No blocking pieces, can move anywhere along the ray
-            return ray;
-        }
-
-        // Find the first blocker
-        let first_blocker = if blockers.lsb().is_some() {
-            blockers.lsb().unwrap()
-        } else {
-            blockers.msb().unwrap()
-        };
-
-        // Get moves up to and including the first blocker
         let mut moves = Bitboard::empty();
         let mut current_ray = ray;
 
+        // Process squares in the ray until we hit a piece
         while let Some(sq) = current_ray.lsb() {
-            moves.set_bit(sq);
-            if sq == first_blocker {
-                // If the blocker is an enemy piece, include it as a valid move
-                // If it's a friendly piece, remove it
-                if !enemy_pieces.test_bit(sq) {
-                    moves.clear_bit(sq);
+            if all_pieces.test_bit(sq) {
+                // If it's an enemy piece, include it as a capture
+                if enemy_pieces.test_bit(sq) {
+                    moves.set_bit(sq);
                 }
                 break;
             }
+            moves.set_bit(sq);
             current_ray.clear_bit(sq);
         }
 

@@ -116,7 +116,7 @@ fn test_rook_moves() {
     // Test blocking
     board.place_piece(PieceType::Pawn, Color::White, 27 + 8); // d5
     let moves = board.get_moves(27);
-    assert_eq!(moves.pop_count(), 13); // Should have 1 fewer move due to blocking
+    assert_eq!(moves.pop_count(), 10); // Should have 4 fewer moves due to blocking (can't move through or capture own pawn)
 }
 
 #[test]
@@ -131,7 +131,7 @@ fn test_queen_moves() {
     board.place_piece(PieceType::Pawn, Color::White, 27 + 8); // d5
     board.place_piece(PieceType::Pawn, Color::White, 27 + 9); // e5
     let moves = board.get_moves(27);
-    assert_eq!(moves.pop_count(), 25); // Should have 2 fewer moves due to blocking
+    assert_eq!(moves.pop_count(), 19); // Should have 8 fewer moves due to blocking (can't move through or capture own pawns)
 }
 
 #[test]
