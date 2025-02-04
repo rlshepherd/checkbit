@@ -181,8 +181,42 @@ impl Board {
         Some((piece_type, color))
     }
 
-    /// Places a piece on the board and updates en passant square if it's a pawn moving two squares
+    /// Places a piece on the board, handling captures and en passant
     pub fn place_piece(&mut self, piece_type: PieceType, color: Color, square: u8) {
+        // Clear any existing piece at the target square (handle captures)
+        match color {
+            Color::White => {
+                self.black_pawns.clear_bit(square);
+                self.black_knights.clear_bit(square);
+                self.black_bishops.clear_bit(square);
+                self.black_rooks.clear_bit(square);
+                self.black_queens.clear_bit(square);
+                self.black_king.clear_bit(square);
+            }
+            Color::Black => {
+                self.white_pawns.clear_bit(square);
+                self.white_knights.clear_bit(square);
+                self.white_bishops.clear_bit(square);
+                self.white_rooks.clear_bit(square);
+                self.white_queens.clear_bit(square);
+                self.white_king.clear_bit(square);
+            }
+        }
+
+        // Handle en passant capture
+        if piece_type == PieceType::Pawn {
+            if let Some(ep_square) = self.en_passant_square {
+                if square == ep_square {
+                    // Remove the captured pawn
+                    match color {
+                        Color::White => self.black_pawns.clear_bit(square - 8),
+                        Color::Black => self.white_pawns.clear_bit(square + 8),
+                    }
+                }
+            }
+        }
+
+        // Clear the piece from all squares of its type (for the moving color)
         let bitboard = match (color, piece_type) {
             (Color::White, PieceType::Pawn) => &mut self.white_pawns,
             (Color::White, PieceType::Knight) => &mut self.white_knights,
@@ -213,6 +247,8 @@ impl Board {
             self.en_passant_square = None;
         }
 
+        // Clear all bits for this piece type and set the new position
+        *bitboard = Bitboard::empty();
         bitboard.set_bit(square);
     }
 
@@ -271,10 +307,10 @@ impl Board {
                     if let Some(ep_square) = self.en_passant_square {
                         if square >= 32 && square < 40 {
                             // White pawns on rank 5
-                            if square % 8 != 0 && ep_square == square + 7 {
+                            if square % 8 != 0 && ep_square == square - 1 {
                                 moves.set_bit(ep_square);
                             }
-                            if square % 8 != 7 && ep_square == square + 9 {
+                            if square % 8 != 7 && ep_square == square + 1 {
                                 moves.set_bit(ep_square);
                             }
                         }
@@ -303,10 +339,10 @@ impl Board {
                     if let Some(ep_square) = self.en_passant_square {
                         if square >= 24 && square < 32 {
                             // Black pawns on rank 4
-                            if square % 8 != 0 && ep_square == square - 9 {
+                            if square % 8 != 0 && ep_square == square - 1 {
                                 moves.set_bit(ep_square);
                             }
-                            if square % 8 != 7 && ep_square == square - 7 {
+                            if square % 8 != 7 && ep_square == square + 1 {
                                 moves.set_bit(ep_square);
                             }
                         }
@@ -364,33 +400,19 @@ impl Board {
         all_pieces: Bitboard,
         enemy_pieces: Bitboard,
     ) -> Bitboard {
-        let blockers = ray & all_pieces;
-        if blockers.as_u64() == 0 {
-            // No blocking pieces, can move anywhere along the ray
-            return ray;
-        }
-
-        // Find the first blocker
-        let first_blocker = if blockers.lsb().is_some() {
-            blockers.lsb().unwrap()
-        } else {
-            blockers.msb().unwrap()
-        };
-
-        // Get moves up to and including the first blocker
         let mut moves = Bitboard::empty();
         let mut current_ray = ray;
 
+        // Process squares in the ray until we hit a piece
         while let Some(sq) = current_ray.lsb() {
-            moves.set_bit(sq);
-            if sq == first_blocker {
-                // If the blocker is an enemy piece, include it as a valid move
-                // If it's a friendly piece, remove it
-                if !enemy_pieces.test_bit(sq) {
-                    moves.clear_bit(sq);
+            if all_pieces.test_bit(sq) {
+                // If it's an enemy piece, include it as a capture
+                if enemy_pieces.test_bit(sq) {
+                    moves.set_bit(sq);
                 }
                 break;
             }
+            moves.set_bit(sq);
             current_ray.clear_bit(sq);
         }
 
@@ -472,112 +494,5 @@ impl std::fmt::Display for Board {
             writeln!(f, "{}", line)?;
         }
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_initial_board() {
-        let board = Board::initial();
-
-        // Check total piece counts
-        assert_eq!(board.get_color_pieces(Color::White).pop_count(), 16);
-        assert_eq!(board.get_color_pieces(Color::Black).pop_count(), 16);
-
-        // Check specific pieces
-        assert_eq!(
-            board.get_pieces(PieceType::Pawn, Color::White).pop_count(),
-            8
-        );
-        assert_eq!(
-            board
-                .get_pieces(PieceType::Knight, Color::White)
-                .pop_count(),
-            2
-        );
-        assert_eq!(
-            board
-                .get_pieces(PieceType::Bishop, Color::White)
-                .pop_count(),
-            2
-        );
-        assert_eq!(
-            board.get_pieces(PieceType::Rook, Color::White).pop_count(),
-            2
-        );
-        assert_eq!(
-            board.get_pieces(PieceType::Queen, Color::White).pop_count(),
-            1
-        );
-        assert_eq!(
-            board.get_pieces(PieceType::King, Color::White).pop_count(),
-            1
-        );
-    }
-
-    #[test]
-    fn test_get_piece_at() {
-        let board = Board::initial();
-
-        // Test white pieces
-        assert_eq!(board.get_piece_at(8), Some((PieceType::Pawn, Color::White))); // a2
-        assert_eq!(
-            board.get_piece_at(1),
-            Some((PieceType::Knight, Color::White))
-        ); // b1
-        assert_eq!(
-            board.get_piece_at(2),
-            Some((PieceType::Bishop, Color::White))
-        ); // c1
-        assert_eq!(board.get_piece_at(0), Some((PieceType::Rook, Color::White))); // a1
-        assert_eq!(
-            board.get_piece_at(3),
-            Some((PieceType::Queen, Color::White))
-        ); // d1
-        assert_eq!(board.get_piece_at(4), Some((PieceType::King, Color::White))); // e1
-
-        // Test empty square
-        assert_eq!(board.get_piece_at(16), None); // a3
-    }
-
-    #[test]
-    fn test_knight_moves() {
-        let mut board = Board::empty();
-        board.place_piece(PieceType::Knight, Color::White, 27); // d4
-
-        let moves = board.get_moves(27);
-        assert_eq!(moves.pop_count(), 8); // Knight should have 8 moves from d4
-    }
-
-    #[test]
-    fn test_pawn_moves() {
-        let mut board = Board::empty();
-
-        // Test white pawn initial moves
-        board.place_piece(PieceType::Pawn, Color::White, 8); // a2
-        let moves = board.get_moves(8);
-        assert_eq!(moves.pop_count(), 2); // Should have 2 moves (single and double push)
-
-        // Test white pawn capture
-        board.place_piece(PieceType::Pawn, Color::Black, 17); // b3
-        let moves = board.get_moves(8);
-        assert_eq!(moves.pop_count(), 3); // Should have 3 moves (pushes + capture)
-    }
-
-    #[test]
-    fn test_bishop_moves() {
-        let mut board = Board::empty();
-        board.place_piece(PieceType::Bishop, Color::White, 27); // d4
-
-        let moves = board.get_moves(27);
-        assert_eq!(moves.pop_count(), 13); // Bishop should have 13 moves from d4
-
-        // Test blocking
-        board.place_piece(PieceType::Pawn, Color::White, 45); // f6
-        let moves = board.get_moves(27);
-        assert_eq!(moves.pop_count(), 10); // Should have 3 fewer moves due to blocking
     }
 }

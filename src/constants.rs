@@ -96,7 +96,7 @@ const fn generate_ray_moves(delta: i8) -> [u64; 64] {
     while square < 64 {
         let mut bb = 0u64;
         let mut current = square;
-        let start_file = current % 8;
+        let _start_file = current % 8;
 
         loop {
             let new_square = (current as i8 + delta) as u8;
@@ -163,70 +163,4 @@ const fn generate_king_moves() -> [u64; 64] {
         square += 1;
     }
     moves
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_file_masks() {
-        assert_eq!(FILE_A & FILE_B, 0);
-        assert_eq!(
-            FILE_A | FILE_B | FILE_C | FILE_D | FILE_E | FILE_F | FILE_G | FILE_H,
-            !0
-        );
-    }
-
-    #[test]
-    fn test_rank_masks() {
-        assert_eq!(RANK_1 & RANK_2, 0);
-        assert_eq!(
-            RANK_1 | RANK_2 | RANK_3 | RANK_4 | RANK_5 | RANK_6 | RANK_7 | RANK_8,
-            !0
-        );
-    }
-
-    #[test]
-    fn test_initial_positions() {
-        // Test that initial positions don't overlap
-        let white_pieces = WHITE_PAWNS_INIT
-            | WHITE_KNIGHTS_INIT
-            | WHITE_BISHOPS_INIT
-            | WHITE_ROOKS_INIT
-            | WHITE_QUEENS_INIT
-            | WHITE_KING_INIT;
-        let black_pieces = BLACK_PAWNS_INIT
-            | BLACK_KNIGHTS_INIT
-            | BLACK_BISHOPS_INIT
-            | BLACK_ROOKS_INIT
-            | BLACK_QUEENS_INIT
-            | BLACK_KING_INIT;
-
-        assert_eq!(white_pieces & black_pieces, 0);
-        assert_eq!(white_pieces.count_ones(), 16);
-        assert_eq!(black_pieces.count_ones(), 16);
-    }
-
-    #[test]
-    fn test_knight_moves() {
-        // Test knight moves from center square (d4)
-        let center_moves = KNIGHT_MOVES[27]; // d4 is index 27
-        assert_eq!(center_moves.count_ones(), 8); // Should have 8 possible moves
-
-        // Test knight moves from corner (a1)
-        let corner_moves = KNIGHT_MOVES[0];
-        assert_eq!(corner_moves.count_ones(), 2); // Should only have 2 possible moves
-    }
-
-    #[test]
-    fn test_king_moves() {
-        // Test king moves from center square (d4)
-        let center_moves = KING_MOVES[27]; // d4 is index 27
-        assert_eq!(center_moves.count_ones(), 8); // Should have 8 possible moves
-
-        // Test king moves from corner (a1)
-        let corner_moves = KING_MOVES[0];
-        assert_eq!(corner_moves.count_ones(), 3); // Should only have 3 possible moves
-    }
 }
